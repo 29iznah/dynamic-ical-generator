@@ -4,6 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic iCal Generator</title>
+    
+    <!-- Download Tracking -->
+    <script>
+        // Function to track downloads using Netlify Functions
+        async function trackDownload(eventTitle, downloadType) {
+            try {
+                const response = await fetch('/.netlify/functions/track-download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        eventTitle: eventTitle,
+                        downloadType: downloadType
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('✅ Tracked download:', eventTitle, downloadType, result);
+                
+                // Also track in localStorage for immediate feedback
+                let downloads = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
+                downloads.push({
+                    timestamp: new Date().toISOString(),
+                    eventTitle: eventTitle,
+                    downloadType: downloadType
+                });
+                localStorage.setItem('downloadHistory', JSON.stringify(downloads));
+                
+            } catch (error) {
+                console.error('❌ Failed to track download:', error);
+                // Fallback to localStorage only
+                let downloads = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
+                downloads.push({
+                    timestamp: new Date().toISOString(),
+                    eventTitle: eventTitle,
+                    downloadType: downloadType
+                });
+                localStorage.setItem('downloadHistory', JSON.stringify(downloads));
+            }
+        }
+        
+        // Function to view stats (for testing)
+        function viewStats() {
+            window.open('/.netlify/functions/get-stats', '_blank');
+        }
+    </script>
+    
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -390,6 +438,7 @@ END:VCALENDAR`;
             setTimeout(() => {
                 const icalContent = generateICalContent(urlEventData);
                 const filename = urlEventData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.ics';
+                trackDownload(urlEventData.title, 'auto_download');
                 downloadICalFile(icalContent, filename);
             }, 2000);
             
@@ -397,6 +446,7 @@ END:VCALENDAR`;
             document.getElementById('manualDownload').addEventListener('click', () => {
                 const icalContent = generateICalContent(urlEventData);
                 const filename = urlEventData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.ics';
+                trackDownload(urlEventData.title, 'manual_download');
                 downloadICalFile(icalContent, filename);
             });
         }
