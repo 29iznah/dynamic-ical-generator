@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic iCal Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e5e9;
+            margin-bottom: 30px;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .share-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .share-url {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 10px 0;
+            min-height: 60px;
+        }
+        .copy-btn {
+            background: #28a745;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .download-btn {
+            background: #dc3545;
+            padding: 12px 24px;
+            font-size: 16px;
+            margin: 10px 0;
+            display: inline-block;
+            text-decoration: none;
+            border-radius: 8px;
+            color: white;
+        }
+        .auto-download {
+            text-align: center;
+            padding: 40px;
+        }
+        .auto-download h2 {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Dynamic iCal Generator</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('create')">Create Event</button>
+            <button class="tab" onclick="switchTab('download')">Download Link</button>
+        </div>
+
+        <div id="create-tab" class="tab-content active">
+            <div class="info">
+                <strong>Create a shareable iCal:</strong> Fill out the form and generate a link that others can click to download the event starting from their current date.
+            </div>
+
+            <form id="eventForm">
+                <div class="form-group">
+                    <label for="eventTitle">Event Title:</label>
+                    <input type="text" id="eventTitle" value="Weekly Team Meeting" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="eventDescription">Event Description:</label>
+                    <textarea id="eventDescription" placeholder="Enter event details, agenda, location, etc.">Weekly team sync to discuss project progress, blockers, and upcoming deliverables.</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="eventLocation">Location:</label>
+                    <input type="text" id="eventLocation" placeholder="Conference Room A, Zoom link, etc." value="Conference Room A">
+                </div>
+
+                <div class="time-group">
+                    <div class="form-group">
+                        <label for="startTime">Start Time:</label>
+                        <input type="time" id="startTime" value="10:00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endTime">End Time:</label>
+                        <input type="time" id="endTime" value="11:00" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="occurrences">Number of Occurrences:</label>
+                    <select id="occurrences">
+                        <option value="4" selected>4 weeks</option>
+                        <option value="6">6 weeks</option>
+                        <option value="8">8 weeks</option>
+                        <option value="12">12 weeks</option>
+                    </select>
+                </div>
+
+                <button type="submit">🔗 Generate Shareable Link</button>
+            </form>
+
+            <div class="share-box" id="shareBox" style="display: none;">
+                <h3>📤 Share This Link</h3>
+                <p>Anyone who clicks this link will download the iCal file with events starting from their current date:</p>
+                <div class="share-url" id="shareUrl"></div>
+                <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Link</button>
+                <br>
+                <a id="testDownload" class="download-btn" target="_blank">🧪 Test Download</a>
+            </div>
+
+            <div class="preview" id="preview" style="display: none;">
+                <strong>iCal Preview:</strong><br><br>
+                <div id="previewContent"></div>
+            </div>
+        </div>
+
+        <div id="download-tab" class="tab-content">
+            <div class="auto-download">
+                <h2>🎯 Ready to Download!</h2>
+                <p>Your calendar event will be downloaded automatically, starting from today's date.</p>
+                <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <div id="eventDetails"></div>
+                </div>
+                <button id="manualDownload" class="download-btn">📥 Click to Download iCal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        function formatDate(date) {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        }
+
+        function generateICalContent(eventData) {
+            const now = new Date();
+            const startDate = new Date(now);
+            const endDate = new Date(now);
+            
+            // Set times
+            const [startHour, startMin] = eventData.startTime.split(':');
+            const [endHour, endMin] = eventData.endTime.split(':');
+            
+            startDate.setHours(parseInt(startHour), parseInt(startMin), 0, 0);
+            endDate.setHours(parseInt(endHour), parseInt(endMin), 0, 0);
+            
+            const uid = 'event-' + Date.now() + '@dynamic-ical-generator';
+            const created = formatDate(now);
+            const dtstart = formatDate(startDate);
+            const dtend = formatDate(endDate);
+            
+            let icalContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Dynamic iCal Generator//EN
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${created}
+DTSTART:${dtstart}
+DTEND:${dtend}
+SUMMARY:${eventData.title}
+DESCRIPTION:${eventData.description}`;
+
+            if (eventData.location) {
+                icalContent += `\nLOCATION:${eventData.location}`;
+            }
+
+            icalContent += `
+RRULE:FREQ=WEEKLY;COUNT=${eventData.occurrences}
+END:VEVENT
+END:VCALENDAR`;
+
+            return icalContent;
+        }
+
+        function downloadICalFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename || 'event.ics';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        function getEventDataFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('title')) {
+                return {
+                    title: decodeURIComponent(urlParams.get('title')),
+                    description: decodeURIComponent(urlParams.get('description') || ''),
+                    location: decodeURIComponent(urlParams.get('location') || ''),
+                    startTime: urlParams.get('startTime') || '10:00',
+                    endTime: urlParams.get('endTime') || '11:00',
+                    occurrences: urlParams.get('occurrences') || '4'
+                };
+            }
+            return null;
+        }
+
+        function createShareableURL(eventData) {
+            const baseURL = window.location.origin + window.location.pathname;
+            const params = new URLSearchParams({
+                title: eventData.title,
+                description: eventData.description,
+                location: eventData.location,
+                startTime: eventData.startTime,
+                endTime: eventData.endTime,
+                occurrences: eventData.occurrences,
+                download: 'auto'
+            });
+            return `${baseURL}?${params.toString()}`;
+        }
+
+        function copyToClipboard() {
+            const shareUrl = document.getElementById('shareUrl').textContent;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#28a745';
+                }, 2000);
+            });
+        }
+
+        function updatePreview(eventData) {
+            const icalContent = generateICalContent(eventData);
+            document.getElementById('previewContent').textContent = icalContent;
+            document.getElementById('preview').style.display = 'block';
+        }
+
+        // Check if this is an auto-download link
+        const urlEventData = getEventDataFromURL();
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlEventData && urlParams.get('download') === 'auto') {
+            // Switch to download tab
+            switchTab('download');
+            
+            // Show event details
+            const today = new Date().toLocaleDateString();
+            document.getElementById('eventDetails').innerHTML = `
+                <strong>📅 ${urlEventData.title}</strong><br>
+                <strong>📍 Location:</strong> ${urlEventData.location}<br>
+                <strong>🕒 Time:</strong> ${urlEventData.startTime} - ${urlEventData.endTime}<br>
+                <strong>🔄 Repeats:</strong> Weekly for ${urlEventData.occurrences} weeks<br>
+                <strong>📆 Starting:</strong> ${today}<br><br>
+                <em>${urlEventData.description}</em>
+            `;
+            
+            // Auto download after 2 seconds
+            setTimeout(() => {
+                const icalContent = generateICalContent(urlEventData);
+                const filename = urlEventData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.ics';
+                downloadICalFile(icalContent, filename);
+            }, 2000);
+            
+            // Manual download button
+            document.getElementById('manualDownload').addEventListener('click', () => {
+                const icalContent = generateICalContent(urlEventData);
+                const filename = urlEventData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.ics';
+                downloadICalFile(icalContent, filename);
+            });
+        }
+
+        // Form submission handler
+        document.getElementById('eventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const eventData = {
+                title: document.getElementById('eventTitle').value,
+                description: document.getElementById('eventDescription').value,
+                location: document.getElementById('eventLocation').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                occurrences: document.getElementById('occurrences').value
+            };
+
+            // Generate shareable URL
+            const shareableURL = createShareableURL(eventData);
+            document.getElementById('shareUrl').textContent = shareableURL;
+            document.getElementById('testDownload').href = shareableURL;
+            document.getElementById('shareBox').style.display = 'block';
+            
+            // Update preview
+            updatePreview(eventData);
+            
+            // Show success message
+            const button = document.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+            button.textContent = '✅ Link Generated!';
+            button.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+            }, 2000);
+        });
+
+        // Update preview when form changes (only if not auto-download mode)
+        if (!urlEventData) {
+            document.getElementById('eventForm').addEventListener('input', () => {
+                const eventData = {
+                    title: document.getElementById('eventTitle').value,
+                    description: document.getElementById('eventDescription').value,
+                    location: document.getElementById('eventLocation').value,
+                    startTime: document.getElementById('startTime').value,
+                    endTime: document.getElementById('endTime').value,
+                    occurrences: document.getElementById('occurrences').value
+                };
+                updatePreview(eventData);
+            });
+            
+            // Initialize preview
+            updatePreview({
+                title: document.getElementById('eventTitle').value,
+                description: document.getElementById('eventDescription').value,
+                location: document.getElementById('eventLocation').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                occurrences: document.getElementById('occurrences').value
+            });
+        }
+    </script>
+</body>
+</html>
